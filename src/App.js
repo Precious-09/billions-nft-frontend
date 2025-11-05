@@ -12,13 +12,13 @@ export default function App() {
 
   const API_URL = process.env.REACT_APP_API_URL;
 
-  // ✅ Convert to Sentence Case
+  // Convert to Sentence Case
   const toSentenceCase = (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // ✅ Handle file upload and convert to base64 for mobile compatibility
+  // Handle file upload & convert to base64 for mobile compatibility
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) {
@@ -29,9 +29,7 @@ export default function App() {
     setFile(f);
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setPreview(reader.result); // base64 string
-    };
+    reader.onload = () => setPreview(reader.result); // base64 string
     reader.readAsDataURL(f);
   };
 
@@ -54,9 +52,8 @@ export default function App() {
 
       const data = await res.json();
 
-      if (data.error) {
-        setError(data.error);
-      } else {
+      if (data.error) setError(data.error);
+      else {
         setResult({
           traits: Array.isArray(data.traits) ? data.traits : [data.traits],
           personality: data.personality || "No personality text generated",
@@ -69,16 +66,22 @@ export default function App() {
     }
   };
 
-  const downloadCard = () => {
+  const downloadCard = async () => {
     if (!cardRef.current) return;
 
-    // Ensure images are loaded before generating PNG
-    const img = cardRef.current.querySelector("img");
-    if (img && !img.complete) {
-      img.onload = downloadCard;
-      return;
-    }
+    // Wait for all images inside card to fully load
+    const images = cardRef.current.querySelectorAll("img");
+    await Promise.all(
+      Array.from(images).map(
+        (img) =>
+          new Promise((resolve) => {
+            if (img.complete) resolve();
+            else img.onload = resolve;
+          })
+      )
+    );
 
+    // Generate PNG after images are loaded
     htmlToImage.toPng(cardRef.current).then((dataUrl) => {
       const link = document.createElement("a");
       link.download = "billions-nft-card.png";
