@@ -18,6 +18,23 @@ export default function App() {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
+  // ✅ Handle file upload and convert to base64 for mobile compatibility
+  const handleFileChange = (e) => {
+    const f = e.target.files[0];
+    if (!f) {
+      setFile(null);
+      setPreview(null);
+      return;
+    }
+    setFile(f);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreview(reader.result); // base64 string
+    };
+    reader.readAsDataURL(f);
+  };
+
   const handleUpload = async () => {
     if (!file) return alert("Upload an image first");
 
@@ -32,7 +49,7 @@ export default function App() {
       const res = await fetch(`${API_URL}/analyze`, {
         method: "POST",
         body: fd,
-        headers: { Accept: "application/json" }
+        headers: { Accept: "application/json" },
       });
 
       const data = await res.json();
@@ -54,6 +71,14 @@ export default function App() {
 
   const downloadCard = () => {
     if (!cardRef.current) return;
+
+    // Ensure images are loaded before generating PNG
+    const img = cardRef.current.querySelector("img");
+    if (img && !img.complete) {
+      img.onload = downloadCard;
+      return;
+    }
+
     htmlToImage.toPng(cardRef.current).then((dataUrl) => {
       const link = document.createElement("a");
       link.download = "billions-nft-card.png";
@@ -74,11 +99,7 @@ export default function App() {
             type="file"
             accept="image/*"
             style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files[0];
-              setFile(f);
-              setPreview(f ? URL.createObjectURL(f) : null);
-            }}
+            onChange={handleFileChange}
           />
           {preview ? "✅ Image Selected — Tap to Replace" : "📤 Upload NFT Image"}
         </label>
@@ -100,17 +121,17 @@ export default function App() {
 
               <h3 style={styles.cardHeader}>🧬 Traits</h3>
               <p style={styles.cardText}>
-                {result.traits.map(t => toSentenceCase(t)).join(", ")}
+                {result.traits.map((t) => toSentenceCase(t)).join(", ")}
               </p>
 
               <h3 style={styles.cardHeader}>💫 Personality</h3>
-              <p style={styles.cardText}>
-                {toSentenceCase(result.personality)}
-              </p>
+              <p style={styles.cardText}>{toSentenceCase(result.personality)}</p>
             </div>
 
             <div style={styles.actions}>
-              <button onClick={downloadCard} style={styles.actionBtn}>📥 Download</button>
+              <button onClick={downloadCard} style={styles.actionBtn}>
+                📥 Download
+              </button>
             </div>
           </>
         )}
