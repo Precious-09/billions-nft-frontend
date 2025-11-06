@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import domtoimage from "dom-to-image-more";   // ✅ FIXED EXPORT ISSUE
 import logo from "./bill2.png";
 
 export default function App() {
@@ -16,13 +17,13 @@ export default function App() {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
 
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result);
-    reader.readAsDataURL(f);
+    reader.readAsDataURL(f); // ✅ Convert to base64 for download compatibility
 
     setFile(f);
   };
@@ -53,7 +54,6 @@ export default function App() {
           personality: data.personality || "No personality text generated",
         });
       }
-
     } catch (e) {
       setError("Server Error — check backend deployment");
     } finally {
@@ -61,12 +61,31 @@ export default function App() {
     }
   };
 
+  // ✅ WORKING DOWNLOAD WITH IMAGE
+  const downloadCard = () => {
+    if (!cardRef.current) return;
+
+    const node = cardRef.current;
+
+    domtoimage
+      .toPng(node)
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+        link.download = "billions-nft-card.png";
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch(() =>
+        alert("Error exporting image. If this continues, use screenshot method.")
+      );
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <h1 style={styles.title}>Billions NFT Personality Scanner</h1>
 
-        <img src={logo} alt="billions" style={{ width: "120px", height: "auto" }} />
+        <img src={logo} alt="billions" style={{ width: "120px" }} />
 
         <label style={styles.uploadBox}>
           <input
@@ -90,12 +109,7 @@ export default function App() {
         {result && (
           <>
             <div ref={cardRef} style={styles.card}>
-              <img
-                className="nft-img-box"
-                src={preview}
-                alt="NFT"
-                style={styles.cardImage}
-              />
+              <img src={preview} alt="NFT" style={styles.cardImage} />
 
               <h3 style={styles.cardHeader}>🧬 Traits</h3>
               <p style={styles.cardText}>
@@ -107,19 +121,22 @@ export default function App() {
             </div>
 
             <div style={styles.actions}>
+              <button onClick={downloadCard} style={styles.actionBtn}>
+                📥 Download Card
+              </button>
+
               <button
                 onClick={() =>
                   alert(
                     "📸 HOW TO SAVE YOUR NFT CARD\n\n" +
-                    "✅ iPhone: Volume Up + Power\n" +
-                    "✅ Android: Volume Down + Power\n" +
-                    "✅ Laptop: Screenshot / Snipping Tool\n\n" +
-                    "Make sure the full card is visible!"
+                      "✅ iPhone: Volume Up + Power\n" +
+                      "✅ Android: Volume Down + Power\n" +
+                      "✅ Laptop: Screenshot / Snipping Tool"
                   )
                 }
                 style={styles.actionBtn}
               >
-                📸 Take Screenshot
+                📸 Screenshot Method
               </button>
             </div>
           </>
@@ -186,7 +203,7 @@ const styles = {
   },
   error: { color: "#ff4fa3", marginTop: 10 },
   card: {
-    background: "#220044",
+    background: "rgba(34,0,68,0.85)",
     borderRadius: 12,
     padding: 20,
     marginTop: 20,
