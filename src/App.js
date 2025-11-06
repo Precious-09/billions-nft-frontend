@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import domtoimage from "dom-to-image-more";   // ✅ FIXED EXPORT ISSUE
 import logo from "./bill2.png";
 
 export default function App() {
@@ -8,14 +7,13 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [showFullscreen, setShowFullscreen] = useState(false); // ✅ NEW
   const cardRef = useRef(null);
 
   const API_URL = process.env.REACT_APP_API_URL;
 
-  const toSentenceCase = (str) => {
-    if (!str) return "";
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  };
+  const toSentenceCase = (str) =>
+    str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -23,7 +21,7 @@ export default function App() {
 
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result);
-    reader.readAsDataURL(f); // ✅ Convert to base64 for download compatibility
+    reader.readAsDataURL(f);
 
     setFile(f);
   };
@@ -54,30 +52,11 @@ export default function App() {
           personality: data.personality || "No personality text generated",
         });
       }
-    } catch (e) {
+    } catch (err) {
       setError("Server Error — check backend deployment");
     } finally {
       setLoading(false);
     }
-  };
-
-  // ✅ WORKING DOWNLOAD WITH IMAGE
-  const downloadCard = () => {
-    if (!cardRef.current) return;
-
-    const node = cardRef.current;
-
-    domtoimage
-      .toPng(node)
-      .then((dataUrl) => {
-        const link = document.createElement("a");
-        link.download = "billions-nft-card.png";
-        link.href = dataUrl;
-        link.click();
-      })
-      .catch(() =>
-        alert("Error exporting image. If this continues, use screenshot method.")
-      );
   };
 
   return (
@@ -85,7 +64,7 @@ export default function App() {
       <div style={styles.container}>
         <h1 style={styles.title}>Billions NFT Personality Scanner</h1>
 
-        <img src={logo} alt="billions" style={{ width: "120px" }} />
+        <img src={logo} alt="billions" style={{ width: 120 }} />
 
         <label style={styles.uploadBox}>
           <input
@@ -121,27 +100,35 @@ export default function App() {
             </div>
 
             <div style={styles.actions}>
-              <button onClick={downloadCard} style={styles.actionBtn}>
-                📥 Download Card
-              </button>
-
               <button
-                onClick={() =>
-                  alert(
-                    "📸 HOW TO SAVE YOUR NFT CARD\n\n" +
-                      "✅ iPhone: Volume Up + Power\n" +
-                      "✅ Android: Volume Down + Power\n" +
-                      "✅ Laptop: Screenshot / Snipping Tool"
-                  )
-                }
+                onClick={() => setShowFullscreen(true)}
                 style={styles.actionBtn}
               >
-                📸 Screenshot Method
+                📸 Screenshot NFT Card
               </button>
             </div>
           </>
         )}
       </div>
+
+      {/* ✅ Fullscreen screenshot popup */}
+      {showFullscreen && (
+        <div style={styles.fullscreenOverlay} onClick={() => setShowFullscreen(false)}>
+          <div style={styles.fullscreenCard}>
+            <div style={styles.card}>
+              <img src={preview} alt="NFT" style={styles.cardImage} />
+
+              <h3 style={styles.cardHeader}>🧬 Traits</h3>
+              <p style={styles.cardText}>
+                {result.traits.map((t) => toSentenceCase(t)).join(", ")}
+              </p>
+
+              <h3 style={styles.cardHeader}>💫 Personality</h3>
+              <p style={styles.cardText}>{toSentenceCase(result.personality)}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -185,52 +172,76 @@ const styles = {
   button: {
     padding: "12px 18px",
     background: "#8a2be2",
-    border: "none",
-    color: "#fff",
     borderRadius: 8,
-    cursor: "pointer",
+    color: "#fff",
     width: "100%",
+    border: "none",
     fontSize: 15,
   },
   loader: {
     width: 28,
     height: 28,
     margin: "10px auto",
-    border: "3px solid #8a2be2",
-    borderTop: "3px solid transparent",
+    border: "4px solid #8a2be2",
+    borderTop: "4px solid transparent",
     borderRadius: "50%",
     animation: "spin 1s linear infinite",
   },
   error: { color: "#ff4fa3", marginTop: 10 },
   card: {
-    background: "rgba(34,0,68,0.85)",
+    background: "#220044",
     borderRadius: 12,
     padding: 20,
     marginTop: 20,
     boxShadow: "0 0 14px #7a2cf8",
+    width: "100%",
   },
   cardImage: {
-    width: 160,
-    height: 160,
+    width: "100%",
+    height: 200,
     objectFit: "contain",
     borderRadius: 10,
-    marginBottom: 10,
     border: "1px solid #9a51ff",
   },
-  cardHeader: { color: "#D5B7FF", marginTop: 10 },
-  cardText: { fontSize: 13, margin: "5px 0" },
+  cardHeader: {
+    color: "#D5B7FF",
+    marginTop: 10,
+    fontSize: 16,
+  },
+  cardText: {
+    fontSize: 13,
+    margin: "5px 0",
+    lineHeight: 1.3,
+  },
   actions: {
     marginTop: 12,
     display: "flex",
-    gap: 10,
     justifyContent: "center",
   },
   actionBtn: {
     background: "#3A187A",
-    padding: "8px 12px",
+    padding: "10px 14px",
     borderRadius: 8,
     cursor: "pointer",
     border: "none",
     color: "#fff",
+  },
+
+  // ✅ Fullscreen popup
+  fullscreenOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(0,0,0,0.9)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+  },
+  fullscreenCard: {
+    width: "90%",
+    maxWidth: 420,
   },
 };
