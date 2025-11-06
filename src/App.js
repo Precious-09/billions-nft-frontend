@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import * as htmlToImage from "html-to-image";
 import logo from "./bill2.png";
 
 export default function App() {
@@ -17,29 +16,15 @@ export default function App() {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // ✅ Upload file to backend — RETURN a SAFE URL
   const handleFileChange = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
 
+    const reader = new FileReader();
+    reader.onload = () => setPreview(reader.result);
+    reader.readAsDataURL(f);
+
     setFile(f);
-
-    const fd = new FormData();
-    fd.append("file", f);
-
-    const uploadRes = await fetch(`${API_URL}/upload`, {
-      method: "POST",
-      body: fd
-    });
-
-    const data = await uploadRes.json();
-    if (!data.url) {
-      alert("Image upload failed");
-      return;
-    }
-
-    // ✅ This URL is canvas-safe (Safari approved)
-    setPreview(data.url);
   };
 
   const handleUpload = async () => {
@@ -74,50 +59,6 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // ✅ SAFE HD DOWNLOAD — works on ALL MOBILE DEVICES
-  const downloadCard = async () => {
-    if (!cardRef.current || !preview) return;
-
-    // Load NFT image manually
-    const nftImg = new Image();
-    nftImg.crossOrigin = "anonymous";
-    nftImg.src = preview;
-
-    await new Promise((resolve) => {
-      nftImg.onload = resolve;
-      nftImg.onerror = resolve;
-    });
-
-    // Convert card to canvas
-    const canvas = await htmlToImage.toCanvas(cardRef.current, {
-      pixelRatio: 3,
-      style: { background: "#220044" },
-    });
-
-    const ctx = canvas.getContext("2d");
-
-    // Find NFT image location inside the card
-    const box = cardRef.current.querySelector(".nft-img-box");
-    const rect = box.getBoundingClientRect();
-    const scale = canvas.width / cardRef.current.offsetWidth;
-
-    // Draw NFT inside canvas
-    ctx.drawImage(
-      nftImg,
-      rect.left * scale,
-      rect.top * scale,
-      rect.width * scale,
-      rect.height * scale
-    );
-
-    // Export final PNG
-    const dataUrl = canvas.toDataURL("image/png", 1.0);
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = "billions-nft-card.png";
-    link.click();
   };
 
   return (
@@ -166,8 +107,19 @@ export default function App() {
             </div>
 
             <div style={styles.actions}>
-              <button onClick={downloadCard} style={styles.actionBtn}>
-                📥 Download (HD)
+              <button
+                onClick={() =>
+                  alert(
+                    "📸 HOW TO SAVE YOUR NFT CARD\n\n" +
+                    "✅ iPhone: Volume Up + Power\n" +
+                    "✅ Android: Volume Down + Power\n" +
+                    "✅ Laptop: Screenshot / Snipping Tool\n\n" +
+                    "Make sure the full card is visible!"
+                  )
+                }
+                style={styles.actionBtn}
+              >
+                📸 Take Screenshot
               </button>
             </div>
           </>
