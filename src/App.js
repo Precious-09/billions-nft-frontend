@@ -60,7 +60,7 @@ export default function App() {
   return (
     <div style={styles.page}>
 
-      {/* ✅ FULLSCREEN MODE FOR SCREENSHOT */}
+      {/* ✅ FULLSCREEN CARD VIEW */}
       {showFull && result && (
         <div style={styles.fullscreenOverlay} onClick={() => setShowFull(false)}>
           <div style={styles.fullscreenCard}>
@@ -71,17 +71,22 @@ export default function App() {
 
       <div style={styles.container}>
         <h1 style={styles.title}>Billions NFT Scanner</h1>
+
+        {/* ✅ CENTERED LOGO */}
         <img src={logo} alt="billions" style={styles.logo} />
 
-        <label style={styles.uploadBox}>
-          <input
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-          {preview ? "✅ Replace Image" : "📤 Upload NFT Image"}
-        </label>
+        {/* ✅ CENTERED UPLOAD BUTTON */}
+        <div style={styles.uploadWrapper}>
+          <label style={styles.uploadBox}>
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+            />
+            {preview ? "✅ Replace Image" : "📤 Upload NFT Image"}
+          </label>
+        </div>
 
         {preview && <img src={preview} alt="preview" style={styles.preview} />}
 
@@ -100,7 +105,7 @@ export default function App() {
               style={styles.fullBtn}
               onClick={() => setShowFull(true)}
             >
-              🚀 View Futuristic Card Fullscreen
+              🚀 View NFT Card
             </button>
           </>
         )}
@@ -109,7 +114,6 @@ export default function App() {
   );
 }
 
-/* ✅ CARD COMPONENT */
 function NFTCard({ preview, result }) {
   const toSentenceCase = (s) =>
     !s ? "" : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -131,7 +135,7 @@ function NFTCard({ preview, result }) {
   );
 }
 
-/* ✅ FUTURISTIC UI STYLES */
+/* ✅ UPDATED FUTURISTIC STYLES */
 const styles = {
   page: {
     background: "radial-gradient(circle at top, #140026, #05000d)",
@@ -157,15 +161,26 @@ const styles = {
     textShadow: "0 0 12px rgba(150,50,255,0.8)",
   },
 
-  logo: { width: 140, marginBottom: 10 },
+  // ✅ CENTERED LOGO
+  logo: {
+    width: 150,
+    margin: "0 auto 18px",
+    display: "block",
+  },
+
+  // ✅ CENTERED UPLOAD BUTTON WRAPPER
+  uploadWrapper: {
+    display: "flex",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
 
   uploadBox: {
-    padding: 14,
+    padding: "14px 18px",
     background: "rgba(90,0,170,0.5)",
     borderRadius: 12,
     border: "1px solid rgba(200,140,255,0.3)",
     cursor: "pointer",
-    marginBottom: 14,
     backdropFilter: "blur(6px)",
   },
 
@@ -188,7 +203,7 @@ const styles = {
     color: "#fff",
     fontSize: 16,
     cursor: "pointer",
-    marginTop: 8,
+    marginTop: 10,
     boxShadow: "0 0 12px rgba(140,60,255,0.5)",
   },
 
@@ -274,7 +289,7 @@ const styles = {
   fullscreenOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.9)",
+    background: "rgba(0,0,0,0.92)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
