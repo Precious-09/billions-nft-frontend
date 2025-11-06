@@ -12,25 +12,34 @@ export default function App() {
 
   const API_URL = process.env.REACT_APP_API_URL;
 
-  // ✅ Convert to Sentence Case
   const toSentenceCase = (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // ✅ Convert selected file to base64 (mobile safe)
-  const handleFileChange = (e) => {
+  // ✅ Upload file to backend — RETURN a SAFE URL
+  const handleFileChange = async (e) => {
     const f = e.target.files[0];
-    if (!f) {
-      setFile(null);
-      setPreview(null);
-      return;
-    }
+    if (!f) return;
+
     setFile(f);
 
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result);
-    reader.readAsDataURL(f);
+    const fd = new FormData();
+    fd.append("file", f);
+
+    const uploadRes = await fetch(`${API_URL}/upload`, {
+      method: "POST",
+      body: fd
+    });
+
+    const data = await uploadRes.json();
+    if (!data.url) {
+      alert("Image upload failed");
+      return;
+    }
+
+    // ✅ This URL is canvas-safe (Safari approved)
+    setPreview(data.url);
   };
 
   const handleUpload = async () => {
@@ -52,14 +61,14 @@ export default function App() {
 
       const data = await res.json();
 
-      if (data.error) {
-        setError(data.error);
-      } else {
+      if (data.error) setError(data.error);
+      else {
         setResult({
           traits: Array.isArray(data.traits) ? data.traits : [data.traits],
           personality: data.personality || "No personality text generated",
         });
       }
+
     } catch (e) {
       setError("Server Error — check backend deployment");
     } finally {
@@ -67,11 +76,11 @@ export default function App() {
     }
   };
 
-  // ✅ PERMANENT FIX — Manual NFT image render + HD export
+  // ✅ SAFE HD DOWNLOAD — works on ALL MOBILE DEVICES
   const downloadCard = async () => {
     if (!cardRef.current || !preview) return;
 
-    // ✅ Load NFT image manually (never fails)
+    // Load NFT image manually
     const nftImg = new Image();
     nftImg.crossOrigin = "anonymous";
     nftImg.src = preview;
@@ -81,7 +90,7 @@ export default function App() {
       nftImg.onerror = resolve;
     });
 
-    // ✅ Convert the DOM card into a canvas
+    // Convert card to canvas
     const canvas = await htmlToImage.toCanvas(cardRef.current, {
       pixelRatio: 3,
       style: { background: "#220044" },
@@ -89,12 +98,12 @@ export default function App() {
 
     const ctx = canvas.getContext("2d");
 
-    // ✅ Locate NFT image container for exact placement
+    // Find NFT image location inside the card
     const box = cardRef.current.querySelector(".nft-img-box");
     const rect = box.getBoundingClientRect();
     const scale = canvas.width / cardRef.current.offsetWidth;
 
-    // ✅ Draw NFT manually inside canvas (100% reliable)
+    // Draw NFT inside canvas
     ctx.drawImage(
       nftImg,
       rect.left * scale,
@@ -103,7 +112,7 @@ export default function App() {
       rect.height * scale
     );
 
-    // ✅ Export PNG
+    // Export final PNG
     const dataUrl = canvas.toDataURL("image/png", 1.0);
     const link = document.createElement("a");
     link.href = dataUrl;
@@ -135,7 +144,6 @@ export default function App() {
         </button>
 
         {loading && <div style={styles.loader}></div>}
-
         {error && <p style={styles.error}>{error}</p>}
 
         {result && (
@@ -169,7 +177,6 @@ export default function App() {
   );
 }
 
-// ✅ STYLES
 const styles = {
   page: {
     background: "#080013",
