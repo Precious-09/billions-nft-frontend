@@ -12,13 +12,13 @@ export default function App() {
 
   const API_URL = process.env.REACT_APP_API_URL;
 
-  // Convert to Sentence Case
+  // ✅ Convert to Sentence Case
   const toSentenceCase = (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // Handle file upload & convert to base64 for mobile compatibility
+  // ✅ Convert selected file to base64 (mobile safe)
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) {
@@ -29,7 +29,7 @@ export default function App() {
     setFile(f);
 
     const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result); // base64 string
+    reader.onload = () => setPreview(reader.result);
     reader.readAsDataURL(f);
   };
 
@@ -52,8 +52,9 @@ export default function App() {
 
       const data = await res.json();
 
-      if (data.error) setError(data.error);
-      else {
+      if (data.error) {
+        setError(data.error);
+      } else {
         setResult({
           traits: Array.isArray(data.traits) ? data.traits : [data.traits],
           personality: data.personality || "No personality text generated",
@@ -66,28 +67,37 @@ export default function App() {
     }
   };
 
+  // ✅ Wait for images to decode (fixes blank mobile exports)
+  const waitForImageToDecode = (img) =>
+    new Promise((resolve) => {
+      if (img.complete) img.decode().then(resolve).catch(resolve);
+      else img.onload = () => img.decode().then(resolve).catch(resolve);
+    });
+
+  // ✅ Optimized HD image export
   const downloadCard = async () => {
     if (!cardRef.current) return;
 
-    // Wait for all images inside card to fully load
-    const images = cardRef.current.querySelectorAll("img");
-    await Promise.all(
-      Array.from(images).map(
-        (img) =>
-          new Promise((resolve) => {
-            if (img.complete) resolve();
-            else img.onload = resolve;
-          })
-      )
-    );
+    const imgs = cardRef.current.querySelectorAll("img");
+    await Promise.all(Array.from(imgs).map(waitForImageToDecode));
 
-    // Generate PNG after images are loaded
-    htmlToImage.toPng(cardRef.current).then((dataUrl) => {
-      const link = document.createElement("a");
-      link.download = "billions-nft-card.png";
-      link.href = dataUrl;
-      link.click();
+    // ✅ Fix shadow crop + increase sharpness
+    const style = {
+      transform: "scale(1.0)",
+      padding: 20,
+      background: "#220044",
+    };
+
+    const dataUrl = await htmlToImage.toPng(cardRef.current, {
+      pixelRatio: 3,
+      quality: 1,
+      style,
     });
+
+    const link = document.createElement("a");
+    link.download = "billions-nft-card.png";
+    link.href = dataUrl;
+    link.click();
   };
 
   return (
@@ -133,7 +143,7 @@ export default function App() {
 
             <div style={styles.actions}>
               <button onClick={downloadCard} style={styles.actionBtn}>
-                📥 Download
+                📥 Download (HD)
               </button>
             </div>
           </>
@@ -143,6 +153,7 @@ export default function App() {
   );
 }
 
+// ✅ STYLES
 const styles = {
   page: {
     background: "#080013",
@@ -200,9 +211,9 @@ const styles = {
   },
   error: { color: "#ff4fa3", marginTop: 10 },
   card: {
-    background: "rgba(34,0,68,0.85)",
+    background: "#220044",
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginTop: 20,
     boxShadow: "0 0 14px #7a2cf8",
   },
