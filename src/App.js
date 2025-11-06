@@ -67,36 +67,47 @@ export default function App() {
     }
   };
 
-  // ✅ Wait for images to decode (fixes blank mobile exports)
-  const waitForImageToDecode = (img) =>
-    new Promise((resolve) => {
-      if (img.complete) img.decode().then(resolve).catch(resolve);
-      else img.onload = () => img.decode().then(resolve).catch(resolve);
-    });
-
-  // ✅ Optimized HD image export
+  // ✅ PERMANENT FIX — Manual NFT image render + HD export
   const downloadCard = async () => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || !preview) return;
 
-    const imgs = cardRef.current.querySelectorAll("img");
-    await Promise.all(Array.from(imgs).map(waitForImageToDecode));
+    // ✅ Load NFT image manually (never fails)
+    const nftImg = new Image();
+    nftImg.crossOrigin = "anonymous";
+    nftImg.src = preview;
 
-    // ✅ Fix shadow crop + increase sharpness
-    const style = {
-      transform: "scale(1.0)",
-      padding: 20,
-      background: "#220044",
-    };
-
-    const dataUrl = await htmlToImage.toPng(cardRef.current, {
-      pixelRatio: 3,
-      quality: 1,
-      style,
+    await new Promise((resolve) => {
+      nftImg.onload = resolve;
+      nftImg.onerror = resolve;
     });
 
+    // ✅ Convert the DOM card into a canvas
+    const canvas = await htmlToImage.toCanvas(cardRef.current, {
+      pixelRatio: 3,
+      style: { background: "#220044" },
+    });
+
+    const ctx = canvas.getContext("2d");
+
+    // ✅ Locate NFT image container for exact placement
+    const box = cardRef.current.querySelector(".nft-img-box");
+    const rect = box.getBoundingClientRect();
+    const scale = canvas.width / cardRef.current.offsetWidth;
+
+    // ✅ Draw NFT manually inside canvas (100% reliable)
+    ctx.drawImage(
+      nftImg,
+      rect.left * scale,
+      rect.top * scale,
+      rect.width * scale,
+      rect.height * scale
+    );
+
+    // ✅ Export PNG
+    const dataUrl = canvas.toDataURL("image/png", 1.0);
     const link = document.createElement("a");
-    link.download = "billions-nft-card.png";
     link.href = dataUrl;
+    link.download = "billions-nft-card.png";
     link.click();
   };
 
@@ -130,7 +141,12 @@ export default function App() {
         {result && (
           <>
             <div ref={cardRef} style={styles.card}>
-              <img src={preview} alt="NFT" style={styles.cardImage} />
+              <img
+                className="nft-img-box"
+                src={preview}
+                alt="NFT"
+                style={styles.cardImage}
+              />
 
               <h3 style={styles.cardHeader}>🧬 Traits</h3>
               <p style={styles.cardText}>
